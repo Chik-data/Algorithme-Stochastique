@@ -1,0 +1,244 @@
+---
+title: "| Rapport de projet cours Algorithme Stochastique\n| Projet : The EM Algorithm in Genetics and Genomics \n"
+author: "| - CHIKHAOUI Sarah \n|"
+date: "vendredi 13 janvier 2023"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  pdf_document:
+    toc: yes
+    keep_tex: yes
+urlcolor: blue
+---
+
+# Plan de notre rapport:
+
+
+Introduction  
+
+A- Determination des fréquences alléliques de l'hemoglobine
+
+B- Determination des probabilités de partage d'allèle IBD chez des paires des soeurs et frères malades  
+  
+C- Determination des motifs consensus : fréquences d'apparition des nucléotides dans les positions des fragments d'ADN
+  
+D- Discussion de la méthode  
+
+E-Bibliographie
+
+# Introduction
+
+L’algorithme EM (Expectation-Maximisation) est un algorithme itératif du à Dempster, Laird et Rubin (1977).  
+L'algorithme EM est une méthode itérative pour calculer l'estimation de vraisemblance maximale (MLE) en présence de données manquantes. Le but du MLE est d'estimer les paramètres du modèle pour lesquelles les données observées sont les plus vraisemblables tout en tenant compte de l'existence de données manquantes.  
+Si on définit X comme les données observées incomplètes on suppose qu'il existe un ensemble complet de données Z = (X , Y ) où Y représente l'ensemble des données manquantes. On doit donc trouver la valeur espérée de la log-vraisemblance de l'ensemble complet de données Z par rapport aux données Y manquantes sachant les données X observées et les paramètres $Θ$, du modèle. Le problème est qu'on ne connaît pas les variables cachées, on calcul alors l’espérance par rapport à Y de la log-Vraisemblance des données complétées sachant les données observées incomplètes et les paramètres $Θ(i-1)$ de l’itération précédente. Dans l’expression de l’espérance, X et $Θ(i-1)$ sont constants, $Θ$ est la variable ajustable et Y est une variable aléatoire gouvernée par la densité f $(Y | {X, Θ(i-1)})$. Une fois ces quantités définies, tout est prêt pour l'optimisation. Les étapes de l'algorithme EM sont donc :  
+-étape E : Évaluation de l'espérance selon les données complétées et les paramètres à notre disposition  
+-étape M : Maximisation sur $Θ$ de cette espérance.  
+Ces étapes sont répétées autant de fois que nécessaire. Chaque itération fait augmenter la log-vraisemblance, donc l'algorithme converge directement vers un maximum local de la fonction de log-vraisemblance.  
+Dans le cadre de notre projet, nous allons nous contenter de répondre au trois problématiques suivants :  
+comment estimer les fréquences des différentes variantes des gènes (appelée allèle) en l'absence d'information sur les génotypes ?  
+comment faire l'estimation du partage des allèles chez des frères et soeurs affectés ?  
+comment estimer les fréquences de 4 nucléotides dans les positions des motifs et dans celles en dehors des motifs lorsque l'emplacement des motifs au sein du fragment est inconnu ?  
+Dans la suite,tout d'abord, nous allons voir trois grandes parties dont on va essayer dans chaque partie de répondre aux trois problematiques cités ci-dessus et ensuite, on va finir avec une conclusion.
+
+
+
+
+## A- Determination des fréquences alléliques de l'hemoglobine.
+
+### 1- Contexte :
+
+Dans cette partie, on cherche à estimer les fréquences alléliques pour les trois allèles A, B et O au locus d'hémoglobine en n’observant que les phénotypes, c'est à dire les groupes sanguins.  
+On a donc les groupes sanguins des individus comme données observées,les génotypes des individus comme données manquantes
+et les génotypes et groupes sanguins ensemble comme données complétées.  
+Si les données manquantes étaient à notre disposition, le problème serait donc simple à résoudre.  
+Comme on ne les a pas, on a recours à l’algorithme EM.On récupère donc le nombre d'individus ayant chaque type de groupe sanguin.
+
+
+### 2- Application des étapes de EM :
+
+L'algorithme commence par une étape d'initialisation. Dans l'article, ils choisissent d'initialiser les fréquences alléliques en leur attribuant des valeurs, comme ils auraient pu choisir d'initialiser le nombre d'individus par génotype.
+Ensuite se suivent plusieurs itérations des 2 étapes E et M.  
+L'étape E consiste à calculer les espérances des nombres d’individus ayant chaque génotype, donc AA, AO, BB et BO, les nombres d’individus ayant les génotypes AB et OO étant prédéfinis car observables directement à partir des phénotypes. En effet, un individu ayant un groupe sanguin AB ne peut avoir comme génotype que AB. Pareil, un individu au groupe sanguin O ne peut avoir comme génotype que OO.  
+En prenant compte des relations entre génotypes et phénotypes, on peut calculer ces espérances à partir des fréquences génotypiques, elles obtenues à partir des fréquences alléliques calculées à l’étape M de l’itération précédente.
+C’est aussi en utilisant le théorème de Bayes que l’on obtient les fréquences génotypiques et donc le nombre d’individus pour chaque génotype.
+
+Par exemple pour le génotype AA:
+ $$E(g_{AA})=t_{A} P(AA | A)$$
+Rappel du théorème de Bayes :  
+  
+$$ P(A|B)=\frac{P(B|A) P(A)}{P(B)} $$
+
+donc d’après le théorème:  
+$$P(AA | A) = P(A | AA) P(AA) / P(A)$$  
+avec A le groupe sanguin A  
+
+or:  
+
+$$P(A) = P(AA ~~ or ~~ AO)= P(AA)+P(AO) = f_{A}^2+2 f_{A} f_{O} $$
+on multiplie par 2 car AO et OA sont tous les deux considérés comme AO.  
+ 
+Et P(A|AA)=1 car le génotype AA ne peut donner qu’un groupe sanguin A.  
+
+Donc :  
+
+$$P(AA|A)=\frac{P(AA)}{P(A)} 
+=\frac{P(AA)}{P(AA orAO)} 
+=\frac{f_{A}^2}{(f_{A}^2+2f_{A}f_{O})}$$
+
+On utilise aussi bien sûr dans ces calculs les relations suivantes:  
+
+$$P(AA)=f_{A}^2  ~~ ~~ et		~~ ~~		P(AO)=2 f_{A}f_{O}  $$
+$$P(BB)=f_{B}^2	  ~~ ~~ et		~~ ~~		P(BO)=2f_{B}f_{O}$$
+$$P(AB)=2 f _{A}f_{B}	~~ ~~ et ~~ ~~	P(OO)=f_{O}^2$$
+
+
+L’étape M de l’algorithme consiste donc à réinitialiser les valeurs des fréquences alléliques à partir des nombres d’individus ayant chaque génotype obtenus à l’étape E.  
+
+Par exemple:  
+$$f_{A}=(g_{AO}+2g_{AA}+g_{AB})/2n$$  
+avec n le nombre total d’individus donc 2n le nombre total d’allèles.  
+
+Après avoir calculé les fréquences alléliques et les nombres d’individus par génotype, on réitère les 2 étapes jusqu’à ce que l’algorithme converge. C’est-à-dire jusqu’à ce qu’on retrouve à peu près les mêmes valeurs à l’itération k et l’itération k+1.
+
+
+### 3- Résultats
+
+
+```{r echo=FALSE , warning=FALSE,message=FALSE}
+library(cowplot)
+library(ggplot2)
+
+p1 <- ggdraw() + draw_image("C:/Users/hassa/Documents/DISQUE DUR D/Université de Paris Cité/Master IMB/M2 IMB Semestre 1/Algorithme stochastique/Projet stochastique/Boxe 1A.png",scale=1)
+
+p2 <- ggdraw() + draw_image("C:/Users/hassa/Documents/DISQUE DUR D/Université de Paris Cité/Master IMB/M2 IMB Semestre 1/Algorithme stochastique/Projet stochastique/Boxe 1B.png",scale=0.9) 
+
+plot_grid(p1,p2)
+```
+
+
+```{r}
+fA=1/3
+fB=1/3
+fO=1/3
+
+tA= 200
+tB= 60
+tAB= 40
+tO= 300
+n=tA+tB+tAB+tO
+  
+gOO=tO
+gAB=tAB
+
+avantA=0
+avantB=0
+avantO=0
+df=data.frame()
+
+while (avantA!=round(fA,4) & avantB!=round(fB,4) & avantO!=round(fO,4)) {
+
+  # E-Step
+  gAA= tA * (fA^2/(fA^2+2*fA*fO))
+  gAO= tA * (2*fA*fO/(fA^2+2*fA*fO))
+  gBB= tB * (fB^2/(fB^2+2*fB*fO))
+  gBO= tB * (2*fB*fO/(fB^2+2*fB*fO)) 
+  g=c(gAA,gAO,gBB,gBO)
+  
+  avantA=round(fA,4)
+  avantB=round(fB,4)
+  avantO=round(fO,4)
+  
+  # M-Step
+  fA= (gAO + 2*gAA +gAB) / (2*n)
+  fB= (gBO + 2*gBB +gAB) / (2*n)
+  fO= (gAO + 2*gOO +gBO) / (2*n)
+  f=c(fA,fB,fO)
+  
+  df=rbind(df,c(round(g,4),round(f,4)))
+  colnames(df)=c("gAA","gAO","gBB","gBO","fA","fB","fO")
+  
+  
+}
+```
+
+```{r}
+print(df)
+```
+## B-  Determination des probabilités de partage d'allèle IBD chez des paires des soeurs et frères malades.
+
+### 1- Contexte
+
+L'analyse de liaison est largement utilisée pour trouver l'emplacement chromosomique d'un gène hypothétique affectant un trait d'intérêt. Ainsi on définit le locus comme la position fixe et précise d'un gène ou d'un marqueur génétique sur un chromosome.  
+Deux locis peuvent alors être distingués en fonction de l’éventuelle présence d’une liaison entre eux: ils sont dits liés s'ils sont physiquement « proches » sur un même chromosome et non liés s'ils sont distants, ou localisés sur des chromosomes différents. Dans ce dernier, les lois d'héritage de Mendel s'appliquent indépendamment pour les deux loci, il est alors facile de calculer la probabilité de partage d'allèles entre deux sœurs et frères à un locus génétique donné. Ainsi dans le cadre de l’analyse de liaison, l’EM est ici utilisé pour estimer ce partage d’allèles entre deux sœurs et frères affectés par une maladie qui nous intéresse.  
+Pour mettre en œuvre l’analyse de liaison, les auteurs collectent dans un premier temps des données sur un locus génétique, appelées données marqueurs, qu’ils supposent proches d'un locus génétique qui affecte la maladie d'intérêt. L’idée est de raisonner ainsi: si les 2 sœurs et frères sont atteints de la même maladie génétique, et que, marqueur et locus de la maladie sont liés, alors il est probable qu'ils partagent au moins un allèle, hérité du même parent, au locus de la maladie. Ce partage n’est cependant pas observé seulement théoriquement plausible.  
+Dans ce cas, la transmission d’allèles pour les deux locis ne peut être indépendante. Et nous nous attendons alors à ce que les probabilités de partage d'allèles au niveau du marqueur diffèrent de 1/4 pour aucun allèle, 1/2 pour un seul allèle, et 1/4 pour deux allèles comme nous le supposons sous l’hypothèse d'absence de liaison.  
+C’est là qu’entre en jeu l’utilisation de l’algorithme EM qui nous permettra d’estimer chacune des 3 probabilités recherchées dans le cas où l’héritage d’allèles à deux locis n’est pas indépendant.  
+
+
+### 2- Application des étapes de EM :
+
+Ainsi, à partir d'un échantillon de paires de frères affectés, les auteurs cherchent à estimer, grâce à EM, les probabilités π0, π1, π2 sous l’hypothèse Ha, de liaison entre marqueur et locus de la maladie.  
+Pour ce faire, définissons d'abord la notion d’IBD. Un même segment d’ADN chez deux individus, est dit IBD, s’ils sont des copies héritées d’un ancêtre commun sans recombinaison, c'est-à-dire que le segment a la même origine ancestrale chez ces individus. Ainsi les auteurs se placent dans le cadre où nous observons le partage des I.B.D.  
+pour chaque paire de frères, soit dans le cas où les parents ont quatre allèles distincts. C’est sous cette hypothèse qu’ils “complètent” les données observées initiales par calcul de la vraisemblance multinationale.  
+Ainsi à l’étape M: grâce à cette vraisemblance, les variables Z0, Z1, Z2, du nombre de pairs de frères partageant respectivement 0, 1, ou 2 allèles sont calculées afin de déterminer les probabilités π0, π1, π2.  
+L'étape E fournit alors les espérances attendues des variables Z0, Z1, Z2 en sommant sur toutes les paires de frères, la probabilité de partager j pour allèles en fonction de leur modèle de partage observé (0 ou 1 et 1 ou 2). Notons que cette probabilité conditionnelle de partage d'IBD, obtenue à partir de la règle de Bayes par:  
+$$P (IBD = j|données observées) ∝ P (données observées|IBD = j)*πj pour j = 0, 1, 2, où $$  
+-πj a été estimé à l'étape M  
+-la probabilité conditionnelle du 2nd membre est calculée à partir des données observées sur les génotypes des parents et des enfants.
+
+
+### 3- Résultats :
+
+```{r echo=FALSE , warning=FALSE,message=FALSE}
+library(cowplot)
+library(ggplot2)
+
+p1 <- ggdraw() + draw_image("C:/Users/hassa/Documents/DISQUE DUR D/Université de Paris Cité/Master IMB/M2 IMB Semestre 1/Algorithme stochastique/Projet stochastique/Boxe 2.png",scale=1)
+
+plot_grid(p1)
+```
+
+## C- Determination des motifs consensus : fréquences d'apparition des nucléotides dans les positions des fragments d'ADN
+
+### 1- Contexte
+
+La compréhension de nombreux processus biologiques fondamentaux nécessite des outils permettant d'identifier des motifs relativement courts des quatres paires de bases intégrés dans des longues chaînes d’autres paires.  
+Un motif se définit comme une courte séquence de paires de bases, de taille 6 à 20 paires et dont le modèle est répété plusieurs fois dans l’ADN. Or il se trouve que certains de ces motifs subissent des variations de bases suite à des mutations. Par exemple, la séquence simple constituée de deux paires de bases spécifiques,CG, est relativement rare dans l'ADN car CG mute facilement en TG.  
+Mais la mutation est supprimée dans des régions proches de gènes spécifiques. Dans ces régions, cette suppression forme alors des îlots riches en CG ou des segments d'ADN qui ont plus de paires de CG que "d'habitude". Par conséquent, si nous voulions identifier ces gènes, une approche pourrait être de commencer par identifier ces régions riches en GC en considérant des chaînes d’ADN comme des réalisations de modèles de Markov cachés, ayant différents états non observés, correspondant à “être une région riche en CG” et “être une région pauvre en CG”.  
+Ici nous considérons un ensemble de gènes connus dont l'emplacement approximatif des motifs fonctionnels correspondants est lui aussi connu. Seule la séquence exacte de chaque motif varie et alors inconnue car le processus de liaison aux protéines ne nécessite pas une séquence exacte de paires de bases.  
+Ainsi on considère 7 fragments d'ADN hypothétiquement réalistes, pour lesquels le motif correspondant est souligné. Chaque motif est de taille 8 nucléotides qui ont tous la même probabilité de se trouver à une certaine position parmi les huits.  
+Cependant, en dehors du motif, ces probabilités ne sont plus équiprobables.  
+L'objectif est de caractériser le schéma général de l'ADN pour les motifs comme une séquence « consensus ». Ainsi les auteurs utilisent alternativement, un modèle de probabilité pour les données de fragment, puis l’algorithme EM.
+
+### 2- Application de l’EM pour trouver les motifs “consensus” :
+
+Les paramètres à estimer sont les fréquences d’apparition de chacun des quatres nucléotides dans les positions motif et hors motif. Dans ce cas, les données “observées” sont les 7 fragments d’ADN comportant chacun un motif non identifié. Les données “incomplètes” représentent sept vecteurs indiquant chacun le point de départ du motif au sein de chaque fragment car les emplacements des motifs ne sont pas observés. Nous complétons alors les données observées par l’hypothèse où le point de départ de chaque motif est connu. Ainsi, sous cette hypothèse, nous obtenons à l’étape M, une matrice de probabilités 4 × 8 qui renseigne les probabilités conditionnelles d’apparition de chaque nucléotide au sein des 7 fragments selon la position (de 1 à 8) dans le motif. Elle indique aussi les fréquences de ces 4 nucléotides sur 144 positions à l’extérieur du motif. Ces probabilités sont ensuite utilisées pour calculer à l’étape E, la log-vraisemblance complétée conditionnellement aux paramètres courant θ(c) et aux données observées (les 7 fragments), nécessaire pour l'étape M. À la fin des itérations de l'EM, nous avons la matrice des probabilités estimées de paires de bases pour chaque emplacement. Celles-ci peuvent être utilisées pour calculer une "séquence consensus" en prenant la paire de bases avec la fréquence la plus élevée à chaque emplacement du motif. 
+À la fin de l'EM, nous avons également la probabilité de chaque alignement (déterminée par les points de départ estimés). Cela a été utilisé pour attribuer des emplacements de motifs à des séquences spécifiques. Cependant le nombre de possibilités croît de façon exponentielle avec le nombre de fragments. Il est donc peu probable que les alignements estimés soient corrects. Cette limite a conduit les auteurs à s'intéresser aux approches bayésiennes basées sur l'échantillonnage de Gibbs (Lawrence et al., 1993). L'application de l'EM décrite ici, comme dans de nombreux autres contextes, est sensible aux valeurs de départ. Des généralisations du cas simple discuté ici, permettant plusieurs types de motifs et plusieurs motifs par fragment, ont été données dans Cardon et Stormo (1992) et Bailey et Elkan (1995).
+
+### 3- Résultats :
+
+```{r echo=FALSE , warning=FALSE,message=FALSE}
+library(cowplot)
+library(ggplot2)
+
+p1 <- ggdraw() + draw_image("C:/Users/hassa/Documents/DISQUE DUR D/Université de Paris Cité/Master IMB/M2 IMB Semestre 1/Algorithme stochastique/Projet stochastique/Boxe 3.png",scale=1)
+
+plot_grid(p1)
+```
+
+
+# Discussion de la méthode  
+
+Nous avons vu à travers  3 exemples génétiques que l’algorithme EM est particulièrement utile pour trouver des probabilités à partir d’inférences sur des données observées incomplètes. Dans le cas des allèles de l’hémoglobine, Lange (2002) montre des exemples de données réelles et aborde une discussion plus approfondie sur l'utilisation de l'EM pour le comptage des gènes.
+Dans le 2nd exemple du partage d'allèle IBD, Risch (1990) étend l'EM au cadre où les données parentales manquent, mais en supposant qu’une estimation des fréquences des allèles parentaux soit connue. Krugliak et al. (1995) ont aussi étendu l'algorithme à les analyses multipoints avec des pedigree complexes ainsi que des marqueurs supplémentaires, mais l'idée de base d'utiliser EM pour estimer les probabilités d'IBD sous HA reste la même.
+Dans le dernier exemple au sujet de la détermination de motif “consensus”, nous avons vu que la probabilité de chaque alignement (déterminée par les points de départ estimés) avaient de chance d’être correctes. Cela a conduit Lawrence et al., (1993) à s'intéresser aux approches bayésiennes basées sur l'échantillonnage de Gibbs.
+
+# Bibliographie
+Les références ci-dessous m’ont aidé à rédiger ce rapport:
+Pour la rédaction de ce rapport, https://math.unm.edu/~james/w11-STAT574d.pdf 
+https://fr.wikipedia.org/wiki/Algorithme_esp%C3%A9rance-maximisation
+https://members.loria.fr/moberger/Enseignement/AVR/Exposes/algo-em.pdf
+https://dridk.me/expectation-maximisation.html
+https://www2.mat.ulaval.ca/fileadmin/Cours/STT-7320/Pr_12.pdf
+https://perso.lpsm.paris/~rebafka/BookGraphes/algorithme-em.html
